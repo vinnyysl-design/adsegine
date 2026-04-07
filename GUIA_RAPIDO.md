@@ -1,116 +1,242 @@
-import streamlit as st
-import pandas as pd
-import inspect
+# 🚀 GUIA RÁPIDO DE USO
 
-def _is_money_col(col_name: str) -> bool:
-    c = str(col_name).strip().lower()
-    if "receita proj" in c:
-        return True
-    if "potencial_receita" in c or "potencial receita" in c:
-        return True
-    if "orcamento" in c or "orçamento" in c:
-        return True
-    if "investimento" in c:
-        return True
-    if "vendas_brutas" in c or "vendas brutas" in c:
-        return True
-    if c == "receita" or c.startswith("receita "):
-        return True
-    return False
+## ⚡ Acesso Rápido
 
-_PERCENT_COLS = {
-    "acos real",
-    "acos_real",
-    "acos objetivo n",
-    "acos_objetivo_n",
-    "cpi_share",
-    "cpi share",
-    "cpi_cum",
-    "cpi cum",
-    "con_visitas_vendas",
-    "con visitas vendas",
-}
+**URL da Aplicação:** https://8501-iop68hor4a5nswkx5ljlg-8f57ffe2.sandbox.novita.ai
 
-def _is_percent_col(col_name: str) -> bool:
-    c = str(col_name).strip().lower().replace("__", "_")
-    return c in _PERCENT_COLS
+**Repositório GitHub:** https://github.com/vlima-creator/Tamanho-do-Mercado
 
-def _dataframe_accepts_column_config() -> bool:
-    try:
-        sig = inspect.signature(st.dataframe)
-        return "column_config" in sig.parameters
-    except Exception:
-        return False
+---
 
-def show_df(df, **kwargs):
-    # evita conflito se quem chamou já mandou column_config
-    kwargs.pop("column_config", None)
+## 📋 Passo a Passo
 
-    _st_dataframe = st.dataframe
+### 1️⃣ DADOS DO CLIENTE (Obrigatório)
 
-    try:
-        from pandas.io.formats.style import Styler
-        if isinstance(df, Styler):
-            return _st_dataframe(df, **kwargs)
-    except Exception:
-        pass
+Acesse o menu **"👤 Dados do Cliente"** e preencha:
 
-    if df is None:
-        return st.info("Sem dados para exibir.")
+- ✅ **Empresa:** Nome do cliente
+- ✅ **Categoria Macro:** Ex: "Ferramentas", "Eletrônicos", "Moda"
+- ✅ **Ticket Médio:** Valor médio de venda (R$)
+- ✅ **Margem:** Percentual de lucro (%)
+- ✅ **Faturamento 3M:** Faturamento médio dos últimos 3 meses
+- ✅ **Unidades 3M:** Quantidade vendida nos últimos 3 meses
+- ⚙️ **Range Permitido:** Tolerância de variação de ticket (padrão: ±20%)
 
-    if not isinstance(df, pd.DataFrame):
-        return _st_dataframe(df, **kwargs)
+**💡 Exemplo:**
+```
+Empresa: Tamoyo
+Categoria: Ferramentas
+Ticket Médio: R$ 204,34
+Margem: 15%
+Faturamento 3M: R$ 33.511,65
+Unidades 3M: 200
+Range: ±20%
+```
 
-    if df.empty:
-        return _st_dataframe(df, **kwargs)
+---
 
-    _df = df.copy()
+### 2️⃣ MERCADO CATEGORIA (Opcional)
 
-    money_cols = [c for c in _df.columns if _is_money_col(c)]
-    percent_cols = [c for c in _df.columns if _is_percent_col(c)]
+Acesse **"📈 Mercado Categoria"** para adicionar histórico:
 
-    for c in percent_cols:
-        ser = pd.to_numeric(_df[c], errors="coerce")
-        try:
-            vmax = ser.max(skipna=True)
-            if pd.notna(vmax) and vmax <= 2:
-                _df[c] = ser * 100
-            else:
-                _df[c] = ser
-        except Exception:
-            _df[c] = ser
+- Período (mês/ano)
+- Faturamento total da categoria
+- Unidades vendidas
 
-    if not money_cols and not percent_cols:
-        return _st_dataframe(_df, **kwargs)
+**Objetivo:** Identificar tendências e sazonalidade
 
-    n_rows, n_cols = _df.shape
-    n_special = len(money_cols) + len(percent_cols)
+---
 
-    # Só usa column_config se a sua versão do Streamlit suportar
-    if _dataframe_accepts_column_config() and n_rows <= 5000 and n_cols <= 60 and n_special <= 30:
-        try:
-            col_config = {}
-            for c in money_cols:
-                col_config[c] = st.column_config.NumberColumn(format="R$ %.2f")
-            for c in percent_cols:
-                col_config[c] = st.column_config.NumberColumn(format="%.2f%%")
-            return _st_dataframe(_df, column_config=col_config, **kwargs)
-        except Exception:
-            pass
+### 3️⃣ MERCADO SUBCATEGORIAS (Obrigatório)
 
-    if n_rows <= 1500 and n_cols <= 40:
-        try:
-            fmt = {c: "R$ {:,.2f}" for c in money_cols}
-            fmt.update({c: "{:.2f}%" for c in percent_cols})
-            return _st_dataframe(_df.style.format(fmt), **kwargs)
-        except Exception:
-            pass
+Acesse **"🎯 Mercado Subcategorias"** e adicione **pelo menos 3 subcategorias**:
 
-    for c in money_cols:
-        _df[c] = pd.to_numeric(_df[c], errors="coerce")
-        _df[c] = _df[c].map(lambda x: "" if pd.isna(x) else f"R$ {x:,.2f}")
-    for c in percent_cols:
-        _df[c] = pd.to_numeric(_df[c], errors="coerce")
-        _df[c] = _df[c].map(lambda x: "" if pd.isna(x) else f"{x:.2f}%")
+- Nome da subcategoria
+- Faturamento dos últimos 6 meses
+- Unidades vendidas dos últimos 6 meses
 
-    return _st_dataframe(_df, **kwargs)
+**💡 Exemplo:**
+```
+Subcategoria: Ferramentas Elétricas
+Faturamento 6M: R$ 3.730.000.000
+Unidades 6M: 20.500.000
+
+Subcategoria: Ferramentas Manuais
+Faturamento 6M: R$ 583.600.000
+Unidades 6M: 5.150.000
+
+Subcategoria: Acessórios para Ferramentas
+Faturamento 6M: R$ 555.600.000
+Unidades 6M: 6.000.000
+```
+
+**✨ A aplicação calculará automaticamente:**
+- Score de priorização (0 a 1)
+- Status (FOCO/OK/EVITAR)
+- Fit de ticket
+- Ranking de subcategorias
+
+---
+
+### 4️⃣ DASHBOARD EXECUTIVO
+
+Acesse **"📊 Dashboard Executivo"** para visualizar:
+
+#### 📊 Indicadores Principais
+- Mercado 6M
+- Ticket mercado vs ticket cliente
+- Share atual estimado
+- Margem de lucro
+
+#### 🎯 Score e Status
+- Gauge visual com score (0-1)
+- Classificação: **FOCO** (verde), **OK** (amarelo), **EVITAR** (vermelho)
+- Comparação de tickets (dentro/fora do range)
+
+#### 💰 Simulação de Cenários
+
+**3 cenários automáticos:**
+
+1. **Conservador (0,2% share)**
+   - Meta realista com baixo investimento
+
+2. **Provável (0,5% share)**
+   - Meta esperada com investimento moderado
+
+3. **Otimista (1,0% share)**
+   - Meta agressiva com investimento alto
+
+**Para cada cenário, veja:**
+- ✅ Receita projetada (6 meses)
+- ✅ Lucro projetado (6 meses)
+- ✅ Delta vs situação atual
+- ✅ Crescimento percentual
+
+#### 📈 Gráficos Interativos
+- Evolução da categoria
+- Ranking de subcategorias
+- Tamanho de mercado (treemap)
+- Comparação de cenários
+- Crescimento percentual
+
+---
+
+## 🎯 INTERPRETAÇÃO DOS RESULTADOS
+
+### Status das Subcategorias
+
+| Status | Significado | Ação Recomendada |
+|--------|-------------|------------------|
+| 🟢 **FOCO** | Melhor oportunidade (score alto + ticket OK) | **PRIORIZAR** - Investir recursos aqui |
+| 🟡 **OK** | Oportunidade secundária (score médio) | Considerar após FOCO |
+| 🔴 **EVITAR** | Não recomendado (score baixo ou ticket desalinhado) | **NÃO INVESTIR** - Focar em outras |
+
+### Leitura do Fit de Ticket
+
+- ✅ **"Ticket OK"** → Cliente está alinhado com o mercado
+- ⬇️ **"Reduzir ticket"** → Cliente precisa baixar preço
+- ⬆️ **"Aumentar ticket"** → Cliente pode aumentar preço
+
+---
+
+## 💡 EXEMPLO PRÁTICO
+
+### Caso: Tamoyo (Ferramentas)
+
+**Entrada:**
+- Ticket: R$ 204,34 | Margem: 15% | Faturamento 3M: R$ 33.511
+
+**Resultado da Análise:**
+
+| Subcategoria | Mercado 6M | Status | Score |
+|--------------|------------|--------|-------|
+| **Ferramentas Elétricas** | R$ 3,73 bi | **🟢 FOCO** | 1.00 |
+| Ferramentas Manuais | R$ 583 mi | 🔴 EVITAR | 0.23 |
+| Acessórios | R$ 555 mi | 🔴 EVITAR | 0.22 |
+
+**Recomendação:** Focar em **Ferramentas Elétricas**
+
+**Cenário Provável (0,5% share):**
+- Receita 6M: **R$ 18.650.000**
+- Crescimento: **278x** vs atual 🚀
+- Lucro: **R$ 27.975**
+
+---
+
+## 🔄 DICAS DE USO
+
+### ✅ Boas Práticas
+
+1. **Dados Confiáveis:** Use dados reais de marketplaces (Mercado Livre, Amazon, etc.)
+2. **Múltiplas Subcategorias:** Adicione pelo menos 5-7 para comparação robusta
+3. **Histórico:** Se possível, adicione dados de categoria para contexto
+4. **Range Adequado:** Ajuste o range de ticket conforme a realidade do mercado
+
+### 🎨 Personalização
+
+- **Ticket Custom:** Teste diferentes preços na simulação
+- **Range:** Aumente/diminua tolerância conforme elasticidade do mercado
+- **Cenários:** Use os 3 cenários para pitch de investidores
+
+### 📊 Exportação (Futuro)
+
+Em breve:
+- Exportar relatório em PDF
+- Salvar análises em JSON
+- Importar dados de Excel
+
+---
+
+## 🆘 PRECISA DE AJUDA?
+
+### Erros Comuns
+
+**❌ "Preencha dados do cliente primeiro"**
+→ Vá em "👤 Dados do Cliente" e complete o formulário
+
+**❌ "Adicione pelo menos 3 subcategorias"**
+→ Vá em "🎯 Mercado Subcategorias" e adicione mais subcategorias
+
+**❌ Score todos zerados**
+→ Verifique se faturamento e unidades foram preenchidos corretamente
+
+### Contato
+
+- 🐛 **Bugs:** Abra uma issue no GitHub
+- 💡 **Sugestões:** Pull requests são bem-vindos!
+- 📧 **Suporte:** Deixe comentário no repositório
+
+---
+
+## 🚀 PRÓXIMOS PASSOS
+
+Após usar a ferramenta, você terá:
+
+1. ✅ **Ranking claro** de subcategorias priorizadas
+2. ✅ **Validação de ticket** (ajustar ou não preço)
+3. ✅ **Projeções financeiras** em 3 cenários
+4. ✅ **Apresentação executiva** pronta (use capturas de tela)
+
+**Use para:**
+- 🎯 Decidir portfólio estratégico
+- 💰 Pitch para investidores
+- 📊 Planejamento comercial
+- 🤝 Negociação com marketplaces
+
+---
+
+## 📱 LINKS ÚTEIS
+
+- **🌐 Aplicação:** https://8501-iop68hor4a5nswkx5ljlg-8f57ffe2.sandbox.novita.ai
+- **💻 GitHub:** https://github.com/vlima-creator/Tamanho-do-Mercado
+- **📖 README Completo:** Ver README.md no repositório
+
+---
+
+<div align="center">
+
+**Desenvolvido com ❤️ usando Streamlit**
+
+[⬆ Voltar ao topo](#-guia-rápido-de-uso)
+
+</div>

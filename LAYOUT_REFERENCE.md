@@ -1,254 +1,109 @@
-"""
-Código de integração das funcionalidades Engine no app.py
-Inserir este código após a seção "Ações Recomendadas por Categoria" e antes de "Download Excel"
+# Análise do Layout de Referência
 
-Localização no app.py: após linha ~1571 (após tab_roas)
-"""
+## Características Visuais Identificadas
 
-# =====================================================================
-# Funcionalidades "Engine" - Smart Budget, Motor Aquecido, Filtro de Combustível
-# =====================================================================
+### 1. **Paleta de Cores**
+- **Background principal:** Preto (#000000 ou muito próximo)
+- **Cards/Containers:** Cinza escuro (#1a1a1a, #262626)
+- **Bordas dos cards:** Bordas sutis com leve brilho
+- **Texto principal:** Branco (#FFFFFF)
+- **Texto secundário:** Cinza claro (#A0A0A0, #B0B0B0)
+- **Destaque/Acento:** Verde (#00FF00 ou similar) para elementos ativos
+- **Ícones:** Brancos com fundo circular
 
-def render_engine_features(camp_strat, stock_df=None, usar_estoque=False, fmt_money_br_func=None, fmt_int_br_func=None):
-    """
-    Renderiza as três funcionalidades Engine no Streamlit.
-    
-    Parâmetros:
-    -----------
-    camp_strat : pd.DataFrame
-        DataFrame com campanhas estratégicas
-    stock_df : pd.DataFrame (opcional)
-        DataFrame com dados de estoque
-    usar_estoque : bool
-        Indica se estoque está sendo utilizado
-    fmt_money_br_func : callable
-        Função para formatar valores monetários
-    fmt_int_br_func : callable
-        Função para formatar inteiros
-    """
-    import streamlit as st
-    import engine_features as engine
-    
-    if camp_strat is None or camp_strat.empty:
-        return
-    
-    # Usar funções padrão se não fornecidas
-    if fmt_money_br_func is None:
-        fmt_money_br_func = lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    
-    if fmt_int_br_func is None:
-        fmt_int_br_func = lambda x: f"{int(round(float(x))):,}".replace(",", ".")
-    
-    st.header("◈ Funcionalidades Engine")
-    st.markdown("Ferramentas avançadas para otimizar o motor de Ads do seu negócio.")
-    
-    engine_tab1, engine_tab2, engine_tab3 = st.tabs([
-        "◈ Smart Budget",
-        "◈ Motor Aquecido",
-        "◈ Filtro de Combustível"
-    ])
-    
-    # =====================================================================
-    # TAB 1: SMART BUDGET
-    # =====================================================================
-    with engine_tab1:
-        st.subheader("◈ Smart Budget - Realocação Inteligente de Orçamento")
-        st.markdown("""
-        Calcula automaticamente quanto de orçamento liberar de campanhas em "Hemorragia" 
-        para alocar em campanhas em "Escala". Maximiza o retorno sem aumentar o investimento total.
-        """)
-        
-        # Executar análise de Smart Budget
-        smart_budget_result = engine.calculate_smart_budget_reallocation(
-            campaigns_df=camp_strat,
-            hemorragia_threshold=3.0,
-            escala_threshold=7.0,
-            lost_budget_threshold=40.0,
-            max_reallocation_pct=0.30,
-            min_daily_budget=5.0
-        )
-        
-        if smart_budget_result['reallocation_plan'].empty:
-            st.info("✅ Nenhuma realocação necessária no momento. Todas as campanhas estão equilibradas.")
-        else:
-            summary = smart_budget_result['summary']
-            
-            # Métricas principais
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric(
-                "Campanhas em Hemorragia",
-                summary['total_campaigns_hemorragia'],
-                delta="candidatas a liberar"
-            )
-            col2.metric(
-                "Campanhas em Escala",
-                summary['total_campaigns_escala'],
-                delta="candidatas a receber"
-            )
-            col3.metric(
-                "Orçamento Liberável",
-                fmt_money_br_func(summary['total_budget_freed']),
-                delta=f"{summary['coverage_pct']:.1f}% de cobertura"
-            )
-            col4.metric(
-                "Viabilidade",
-                "✅ Viável" if summary['feasible'] else "⚠️ Parcial",
-                delta=f"Surplus: {fmt_money_br_func(summary['budget_surplus'])}"
-            )
-            
-            st.divider()
-            
-            # Plano de realocação
-            st.subheader("Plano de Realocação Recomendado")
-            realloc_plan = smart_budget_result['reallocation_plan'].copy()
-            realloc_plan['Orcamento_Atual'] = realloc_plan['Orcamento_Atual'].apply(fmt_money_br_func)
-            realloc_plan['Valor_Recomendado'] = realloc_plan['Valor_Recomendado'].apply(fmt_money_br_func)
-            realloc_plan['ROAS_Atual'] = realloc_plan['ROAS_Atual'].apply(lambda x: f"{x:.2f}x")
-            st.dataframe(realloc_plan, use_container_width=True, hide_index=True)
-            
-            st.success(f"💡 Impacto estimado no ROAS: {summary['estimated_roas_impact']:.2f}x")
-    
-    # =====================================================================
-    # TAB 2: ALERTA DE MOTOR AQUECIDO
-    # =====================================================================
-    with engine_tab2:
-        st.subheader("◈ Alerta de Motor Aquecido - ROAS Excepcional")
-        st.markdown("""
-        Detecta automaticamente campanhas com ROAS excepcionalmente alto e sugere escala imediata.
-        Essas são as oportunidades "ouro" que não devem ser perdidas.
-        """)
-        
-        # Executar análise de Motor Aquecido
-        overheated_result = engine.detect_overheated_engine_alerts(
-            campaigns_df=camp_strat,
-            roas_exceptional_mult=1.50,
-            roas_baseline=5.0,
-            min_investment=50.0,
-            min_conversions=5
-        )
-        
-        if overheated_result['alert_count'] == 0:
-            st.info("✅ Nenhuma campanha com ROAS excepcional no momento. Continue monitorando!")
-        else:
-            # Métricas principais
-            col1, col2, col3 = st.columns(3)
-            col1.metric(
-                "Campanhas em Alerta",
-                overheated_result['alert_count'],
-                delta="◈ Motor Aquecido"
-            )
-            col2.metric(
-                "Oportunidade Total",
-                fmt_money_br_func(overheated_result['total_opportunity']),
-                delta="potencial com 50% mais orçamento"
-            )
-            col3.metric(
-                "Status",
-                "🚨 CRÍTICO" if any('CRITICA' in str(r) for r in overheated_result['recommendations']) else "⚠️ ALTO",
-                delta="ação recomendada"
-            )
-            
-            st.divider()
-            
-            # Recomendações
-            st.subheader("Recomendações")
-            for rec in overheated_result['recommendations']:
-                st.warning(rec)
-            
-            st.divider()
-            
-            # Tabela de alertas
-            st.subheader("Campanhas em Alerta")
-            alerts_table = overheated_result['alerts'][[
-                'Nome', 'ROAS_Real', 'Investimento', 'Receita', 'Urgencia', 'Oportunidade_Escala'
-            ]].copy()
-            alerts_table['ROAS_Real'] = alerts_table['ROAS_Real'].apply(lambda x: f"{x:.2f}x")
-            alerts_table['Investimento'] = alerts_table['Investimento'].apply(fmt_money_br_func)
-            alerts_table['Receita'] = alerts_table['Receita'].apply(fmt_money_br_func)
-            alerts_table['Oportunidade_Escala'] = alerts_table['Oportunidade_Escala'].apply(fmt_money_br_func)
-            st.dataframe(alerts_table, use_container_width=True, hide_index=True)
-    
-    # =====================================================================
-    # TAB 3: FILTRO DE COMBUSTÍVEL
-    # =====================================================================
-    with engine_tab3:
-        st.subheader("◈ Filtro de Combustível - Proteção de Estoque")
-        st.markdown("""
-        Monitora o consumo de estoque em tempo real e alerta antes que o "motor rode seco".
-        Garante que você nunca desperdice verba em Ads sem produto para vender.
-        """)
-        
-        # Preparar dados para análise de combustível
-        fuel_stock_df = None
-        if usar_estoque and stock_df is not None:
-            fuel_stock_df = stock_df
-        
-        # Executar análise de Filtro de Combustível
-        fuel_result = engine.apply_fuel_filter_logic(
-            campaigns_df=camp_strat,
-            stock_df=fuel_stock_df,
-            estoque_critico=5,
-            estoque_baixo=20,
-            estoque_min_ads=10,
-            burn_rate_days=7
-        )
-        
-        summary_fuel = fuel_result['summary']
-        
-        # Métricas principais
-        col1, col2, col3, col4, col5 = st.columns(5)
-        col1.metric(
-            "Total de Campanhas",
-            summary_fuel['total_campaigns']
-        )
-        col2.metric(
-            "✅ OK",
-            summary_fuel['campaigns_ok'],
-            delta="estoque adequado"
-        )
-        col3.metric(
-            "📦 Baixo",
-            summary_fuel['campaigns_baixo'],
-            delta="monitorar"
-        )
-        col4.metric(
-            "⚠️ Crítico",
-            summary_fuel['campaigns_critico'],
-            delta="ação urgente"
-        )
-        col5.metric(
-            "🛑 Vazio",
-            summary_fuel['campaigns_vazio'],
-            delta="pausar Ads"
-        )
-        
-        st.divider()
-        
-        # Recomendações
-        st.subheader("Recomendações")
-        for rec in fuel_result['recommendations']:
-            if "✅" in rec:
-                st.success(rec)
-            elif "🛑" in rec:
-                st.error(rec)
-            elif "⚠️" in rec or "🚨" in rec:
-                st.warning(rec)
-            else:
-                st.info(rec)
-        
-        st.divider()
-        
-        # Tabela de status de combustível
-        if not fuel_result['at_risk_campaigns'].empty:
-            st.subheader("Campanhas em Risco")
-            at_risk_table = fuel_result['at_risk_campaigns'][[
-                'Nome', 'Estoque', 'Taxa_Consumo_Diaria', 'Dias_Estoque_Restante', 'Status_Combustivel'
-            ]].copy()
-            at_risk_table['Estoque'] = at_risk_table['Estoque'].apply(lambda x: f"{int(x)} un.")
-            at_risk_table['Taxa_Consumo_Diaria'] = at_risk_table['Taxa_Consumo_Diaria'].apply(lambda x: f"{x:.1f} un./dia")
-            at_risk_table['Dias_Estoque_Restante'] = at_risk_table['Dias_Estoque_Restante'].apply(
-                lambda x: f"{x:.1f} dias" if x != float('inf') else "∞"
-            )
-            st.dataframe(at_risk_table, use_container_width=True, hide_index=True)
-        else:
-            st.success("✅ Todas as campanhas têm estoque adequado!")
+### 2. **Estrutura do Layout**
+
+#### **Sidebar (Esquerda)**
+- Fundo: Preto/Cinza muito escuro (#0a0a0a)
+- Largura: ~240px
+- Elementos:
+  - Logo/Título no topo: "Curva ABC" com ícone de gráfico
+  - Subtítulo: "Diagnóstico & Ações"
+  - Seção "Upload de Dados" com ícone de cubo
+  - Área de drag-and-drop para arquivos
+  - Botão "Browse files"
+  - Lista de arquivos carregados
+  - Seção "Filtros Globais" com ícone de alvo
+  - Filtros de curvas (A, B, C com badges coloridos)
+
+#### **Header Principal**
+- Título grande: "CURVA ABC, DIAGNÓSTICO E AÇÕES"
+- Subtítulo: "Análise inteligente para decisões rápidas por frente e prioridade"
+- Fundo: Card com borda arredondada
+- Ícone de gráfico à esquerda do título
+
+#### **Cards de Métricas (KPIs)**
+- Layout: Grid de 4 colunas
+- Estilo: Cards escuros com bordas arredondadas
+- Estrutura de cada card:
+  - Ícone circular no topo (branco com fundo transparente)
+  - Label em maiúsculas (cinza claro)
+  - Valor grande e destacado (branco)
+- Métricas mostradas:
+  1. TOTAL DE ANÚNCIOS: 202
+  2. FATURAMENTO TOTAL: R$ 871.096,11
+  3. QUANTIDADE TOTAL: 3.544
+  4. TICKET MÉDIO: R$ 245,79
+
+#### **Navegação por Tabs**
+- Tabs horizontais: DASHBOARD, LISTAS E EXPORTAÇÃO, PLANO TÁTICO, RELATÓRIO ESTRATÉGICO
+- Tab ativa: Borda inferior verde
+- Texto: Maiúsculas, cinza claro
+
+#### **Seção de Filtros**
+- Título: "Selecione o Período para Análise"
+- Dropdown: Fundo escuro com texto branco
+- Valor selecionado: "0-30"
+
+#### **Cards de Métricas Filtradas**
+- Mesmo estilo dos cards superiores
+- Grid de 4 colunas
+- Métricas específicas do período selecionado:
+  1. FATURAMENTO 0-30: R$ 302.319,34
+  2. QUANTIDADE 0-30: 1.184
+  3. TICKET MÉDIO 0-30: R$ 255,34
+  4. CURVA A (0-30): 26
+
+### 3. **Tipografia**
+- Títulos principais: Sans-serif, bold, maiúsculas
+- Labels: Sans-serif, regular, maiúsculas, menor
+- Valores: Sans-serif, bold, grande
+- Hierarquia clara entre títulos, labels e valores
+
+### 4. **Espaçamento e Layout**
+- Margens consistentes entre elementos
+- Padding generoso nos cards
+- Border-radius suave (~8-12px)
+- Grid responsivo com gaps uniformes
+
+### 5. **Ícones**
+- Estilo: Line icons (outline)
+- Cor: Branco
+- Posicionamento: Centralizados nos cards
+- Tamanho: ~32-40px
+
+### 6. **Elementos Interativos**
+- Botões: Fundo escuro com borda, texto branco
+- Hover states: Provavelmente com mudança de cor/borda
+- Dropdowns: Fundo escuro, texto branco, ícone de seta
+
+## Diferenças com o Layout Atual (Streamlit)
+
+1. **Cor de fundo:** Atual usa cinza (#1E1E1E), referência usa preto puro
+2. **Sidebar:** Atual usa sidebar padrão do Streamlit, referência tem sidebar customizada
+3. **Cards:** Atual tem estilo mais simples, referência tem ícones e estrutura mais elaborada
+4. **Navegação:** Atual usa radio buttons, referência usa tabs horizontais
+5. **Tipografia:** Referência usa mais maiúsculas e hierarquia mais marcada
+6. **Ícones:** Referência tem ícones circulares em todos os cards de métricas
+
+## Plano de Implementação
+
+Para adaptar o layout atual ao padrão de referência, será necessário:
+
+1. Criar CSS customizado extensivo para sobrescrever estilos do Streamlit
+2. Adicionar ícones aos cards de métricas
+3. Modificar a estrutura de navegação (radio → tabs)
+4. Ajustar paleta de cores para tons mais escuros
+5. Implementar sidebar customizada com HTML/CSS
+6. Adicionar estrutura de grid para os cards de métricas
+7. Melhorar tipografia e hierarquia visual

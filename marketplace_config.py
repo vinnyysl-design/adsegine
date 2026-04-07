@@ -1,71 +1,164 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Script para extrair dados do template Excel e preparar para o app Streamlit
+Configuração de Marketplaces
+Define as características e requisitos de cada canal
 """
 
-import pandas as pd
-import json
-import os
-
-def extract_data(file_path):
-    results = {
-        "cliente": {},
-        "mercado_categoria": [],
-        "mercado_subcategorias": []
-    }
-    
-    # 1. Extrair Dados do Cliente
-    try:
-        df_cliente = pd.read_excel(file_path, sheet_name="Cliente", header=None)
-        # Mapeamento baseado na estrutura observada
-        results["cliente"] = {
-            "empresa": df_cliente.iloc[4, 1],
-            "categoria": df_cliente.iloc[5, 1],
-            "ticket_medio": float(df_cliente.iloc[6, 1]),
-            "margem": float(df_cliente.iloc[7, 1]),
-            "faturamento_3m": float(df_cliente.iloc[8, 1]),
-            "unidades_3m": int(df_cliente.iloc[9, 1]),
-            "range_permitido": float(df_cliente.iloc[10, 1]),
-            "ticket_custom": float(df_cliente.iloc[11, 1]) if pd.notna(df_cliente.iloc[11, 1]) else None
+MARKETPLACES = {
+    "mercado_livre": {
+        "name": "Mercado Livre",
+        "icon": "🛒",
+        "color": "#ffe600",
+        "reports_required": [
+            {
+                "key": "vendas",
+                "label": "Relatório de Desempenho de Vendas (Orgânico)",
+                "description": "Arquivo Excel com dados de vendas orgânicas"
+            },
+            {
+                "key": "patrocinados",
+                "label": "Relatório de Anúncios Patrocinados",
+                "description": "Arquivo Excel com dados de anúncios"
+            },
+            {
+                "key": "campanha",
+                "label": "Relatório de Campanha",
+                "description": "Arquivo Excel com dados de campanhas"
+            }
+        ],
+        "reports_optional": [
+            {
+                "key": "estoque",
+                "label": "Relatório de Estoque (Opcional)",
+                "description": "Arquivo Excel com dados de estoque"
+            },
+            {
+                "key": "snapshot",
+                "label": "Snapshot de Referência (Opcional)",
+                "description": "Arquivo Excel com dados históricos para comparação"
+            }
+        ],
+        "kpis": [
+            {"key": "investimento", "label": "INVESTIMENTO ADS", "icon": "💵"},
+            {"key": "receita", "label": "RECEITA ADS", "icon": "💰"},
+            {"key": "roas", "label": "ROAS", "icon": "📉"},
+            {"key": "tacos", "label": "TACOS", "icon": "🎯"}
+        ],
+        "metrics": {
+            "primary": "Receita Ads",
+            "roas_target": 5.0,
+            "tacos_target": 15.0
         }
-    except Exception as e:
-        print(f"Erro ao extrair dados do cliente: {e}")
+    },
+    "shopee": {
+        "name": "Shopee",
+        "icon": "🛍️",
+        "color": "#ee4d2d",
+        "reports_required": [
+            {
+                "key": "dados_gerais",
+                "label": "Dados Gerais de Anúncios",
+                "description": "Arquivo CSV com dados gerais de campanhas CPC"
+            }
+        ],
+        "reports_optional": [
+            {
+                "key": "palavras_chave",
+                "label": "Relatório de Palavras-chave (Opcional)",
+                "description": "Arquivo CSV com dados de palavras-chave e locação"
+            }
+        ],
+        "kpis": [
+            {"key": "gmv", "label": "GMV TOTAL", "icon": "💰"},
+            {"key": "despesas", "label": "DESPESAS", "icon": "💵"},
+            {"key": "roas", "label": "ROAS MÉDIO", "icon": "📈"},
+            {"key": "roas_direto", "label": "ROAS DIRETO", "icon": "🎯"},
+            {"key": "credito_protecao", "label": "CRÉDITO PROTEÇÃO", "icon": "🛡️"},
+            {"key": "campanhas_protegidas", "label": "CAMPANHAS PROTEGIDAS", "icon": "✅"}
+        ],
+        "metrics": {
+            "primary": "GMV",
+            "roas_target": 3.0,
+            "protecao_roas": {
+                "taxa_cumprimento_padrao": 0.90,
+                "taxa_cumprimento_impulsao": 0.70,
+                "conversoes_min_item_unico": 5,
+                "conversoes_min_grupo": 5,
+                "conversoes_min_loja": 10
+            }
+        }
+    }
+}
 
-    # 2. Extrair Mercado Categoria
-    try:
-        df_cat = pd.read_excel(file_path, sheet_name="Mercado_Categoria", skiprows=2)
-        for _, row in df_cat.iterrows():
-            if pd.notna(row['Periodo (texto)']):
-                results["mercado_categoria"].append({
-                    "periodo": str(row['Periodo (texto)']),
-                    "faturamento": float(row['Faturamento (R$)']),
-                    "unidades": int(row['Unidades'])
-                })
-    except Exception as e:
-        print(f"Erro ao extrair mercado categoria: {e}")
 
-    # 3. Extrair Mercado Subcategoria
-    try:
-        df_sub = pd.read_excel(file_path, sheet_name="Mercado_Subcategoria", skiprows=2)
-        for _, row in df_sub.iterrows():
-            if pd.notna(row['Subcategoria']):
-                results["mercado_subcategorias"].append({
-                    "subcategoria": row['Subcategoria'],
-                    "faturamento_6m": float(row['Faturamento 6M (R$)']),
-                    "unidades_6m": int(row['Unidades 6M'])
-                })
-    except Exception as e:
-        print(f"Erro ao extrair mercado subcategoria: {e}")
+def get_marketplace_config(marketplace_key):
+    """
+    Retorna a configuração de um marketplace específico
+    
+    Args:
+        marketplace_key: Chave do marketplace ('mercado_livre' ou 'shopee')
+    
+    Returns:
+        dict: Configuração do marketplace
+    """
+    return MARKETPLACES.get(marketplace_key, None)
 
-    return results
 
-if __name__ == "__main__":
-    excel_path = "/home/ubuntu/upload/Template_Analise_Mercado_Marketplace_v8_Sheets(1).xlsx"
-    if os.path.exists(excel_path):
-        data = extract_data(excel_path)
-        with open("/home/ubuntu/Tamanho-do-Mercado/initial_data.json", "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
-        print("Dados extraídos com sucesso para initial_data.json")
-    else:
-        print(f"Arquivo não encontrado: {excel_path}")
+def get_marketplace_list():
+    """
+    Retorna lista de marketplaces disponíveis
+    
+    Returns:
+        list: Lista de tuplas (key, name, icon)
+    """
+    return [
+        (key, config["name"], config["icon"]) 
+        for key, config in MARKETPLACES.items()
+    ]
+
+
+def get_required_reports(marketplace_key):
+    """
+    Retorna lista de relatórios obrigatórios para um marketplace
+    
+    Args:
+        marketplace_key: Chave do marketplace
+    
+    Returns:
+        list: Lista de relatórios obrigatórios
+    """
+    config = get_marketplace_config(marketplace_key)
+    if config:
+        return config.get("reports_required", [])
+    return []
+
+
+def get_optional_reports(marketplace_key):
+    """
+    Retorna lista de relatórios opcionais para um marketplace
+    
+    Args:
+        marketplace_key: Chave do marketplace
+    
+    Returns:
+        list: Lista de relatórios opcionais
+    """
+    config = get_marketplace_config(marketplace_key)
+    if config:
+        return config.get("reports_optional", [])
+    return []
+
+
+def get_kpis_config(marketplace_key):
+    """
+    Retorna configuração de KPIs para um marketplace
+    
+    Args:
+        marketplace_key: Chave do marketplace
+    
+    Returns:
+        list: Lista de KPIs configurados
+    """
+    config = get_marketplace_config(marketplace_key)
+    if config:
+        return config.get("kpis", [])
+    return []

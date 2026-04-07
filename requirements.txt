@@ -1,1 +1,5 @@
-streamlit\npandas\nnumpy\nplotly\nopenpyxl\nfpdf2\nxlsxwriter\nscipy
+streamlit
+pandas
+openpyxl
+plotly
+xlsxwriter

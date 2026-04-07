@@ -1,216 +1,118 @@
-"""
-Módulo para criar funil de vendas visual com Liquid Glass
-Compatível com Mercado Livre e Shopee
-"""
+# Validação do Novo Layout
 
-def create_sales_funnel_html(impressoes, cliques, conversoes):
-    """
-    Cria um funil de vendas HTML/CSS com efeito Liquid Glass
-    
-    Args:
-        impressoes (int): Número total de impressões
-        cliques (int): Número total de cliques
-        conversoes (int): Número total de conversões
-    
-    Returns:
-        str: HTML do funil de vendas
-    """
-    
-    # Calcula taxas
-    ctr = (cliques / impressoes * 100) if impressoes > 0 else 0
-    cvr = (conversoes / cliques * 100) if cliques > 0 else 0
-    
-    # Formata números
-    impressoes_fmt = f"{impressoes:,.0f}".replace(",", ".")
-    cliques_fmt = f"{cliques:,.0f}".replace(",", ".")
-    conversoes_fmt = f"{conversoes:,.0f}".replace(",", ".")
-    
-    html = f"""
-    <style>
-        * {{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }}
-        
-        .funnel-wrapper {{
-            width: 100%;
-            min-height: 400px;
-            background: linear-gradient(135deg, rgba(10, 10, 15, 0.95) 0%, rgba(20, 20, 30, 0.95) 100%);
-            padding: 1.5rem;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            border-radius: 16px;
-        }}
-        
-        .funnel-title {{
-            text-align: center;
-            color: #ffffff;
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 2rem;
-            letter-spacing: 0.5px;
-        }}
-        
-        .funnel-container {{
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0;
-            max-width: 900px;
-            margin: 0 auto;
-            position: relative;
-        }}
-        
-        .funnel-stage {{
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            padding: 1.25rem 1.5rem;
-            position: relative;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(20px);
-            border-radius: 12px;
-            box-shadow: 
-                0 8px 32px rgba(0, 0, 0, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        }}
-        
-        .funnel-stage:hover {{
-            transform: translateY(-3px);
-            box-shadow: 
-                0 12px 40px rgba(0, 0, 0, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.15);
-        }}
-        
-        .stage-impressoes {{
-            width: 90%;
-            background: linear-gradient(135deg, rgba(52, 131, 250, 0.2) 0%, rgba(52, 131, 250, 0.1) 100%);
-            border: 1px solid rgba(52, 131, 250, 0.4);
-            margin-bottom: 1rem;
-        }}
-        
-        .stage-cliques {{
-            width: 75%;
-            background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 193, 7, 0.1) 100%);
-            border: 1px solid rgba(255, 193, 7, 0.4);
-            margin-bottom: 1rem;
-        }}
-        
-        .stage-conversoes {{
-            width: 60%;
-            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.1) 100%);
-            border: 1px solid rgba(76, 175, 80, 0.4);
-        }}
-        
-        .stage-label {{
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 0.4rem;
-        }}
-        
-        .stage-value {{
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 0.2rem;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        }}
-        
-        .stage-rate {{
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.6);
-            font-weight: 500;
-        }}
-        
-        .connector {{
-            width: 2px;
-            height: 20px;
-            background: repeating-linear-gradient(
-                to bottom,
-                rgba(255, 255, 255, 0.3) 0px,
-                rgba(255, 255, 255, 0.3) 4px,
-                transparent 4px,
-                transparent 8px
-            );
-            margin: -5px 0;
-        }}
-        
-        @media (max-width: 768px) {{
-            .funnel-wrapper {{
-                padding: 1rem;
-                min-height: 350px;
-            }}
-            
-            .funnel-title {{
-                font-size: 1rem;
-                margin-bottom: 1.5rem;
-            }}
-            
-            .stage-value {{
-                font-size: 1.4rem;
-            }}
-            
-            .stage-label {{
-                font-size: 0.65rem;
-            }}
-        }}
-    </style>
-    
-    <div class="funnel-wrapper">
-        <div class="funnel-title">Funil de Conversão Estratégico</div>
-        
-        <div class="funnel-container">
-            <!-- Impressões -->
-            <div class="funnel-stage stage-impressoes">
-                <div class="stage-label">Impressões</div>
-                <div class="stage-value">{impressoes_fmt}</div>
-                <div class="stage-rate">Alcance total</div>
-            </div>
-            
-            <div class="connector"></div>
-            
-            <!-- Cliques -->
-            <div class="funnel-stage stage-cliques">
-                <div class="stage-label">Cliques</div>
-                <div class="stage-value">{cliques_fmt}</div>
-                <div class="stage-rate">CTR: {ctr:.2f}%</div>
-            </div>
-            
-            <div class="connector"></div>
-            
-            <!-- Conversões -->
-            <div class="funnel-stage stage-conversoes">
-                <div class="stage-label">Vendas</div>
-                <div class="stage-value">{conversoes_fmt}</div>
-                <div class="stage-rate">CVR: {cvr:.2f}%</div>
-            </div>
-        </div>
-    </div>
-    """
-    
-    return html
+## Data: 04/02/2026
 
+## Status: ✅ IMPLEMENTADO COM SUCESSO
 
-def create_sales_funnel_from_df(df, impressoes_col="Impressões", cliques_col="Cliques", conversoes_col="Conversões"):
-    """
-    Cria funil de vendas a partir de um DataFrame
-    
-    Args:
-        df (pd.DataFrame): DataFrame com os dados
-        impressoes_col (str): Nome da coluna de impressões
-        cliques_col (str): Nome da coluna de cliques
-        conversoes_col (str): Nome da coluna de conversões
-    
-    Returns:
-        str: HTML do funil de vendas
-    """
-    
-    impressoes = int(df[impressoes_col].sum()) if impressoes_col in df.columns else 0
-    cliques = int(df[cliques_col].sum()) if cliques_col in df.columns else 0
-    conversoes = int(df[conversoes_col].sum()) if conversoes_col in df.columns else 0
-    
-    return create_sales_funnel_html(impressoes, cliques, conversoes)
+### Características Implementadas
+
+#### 1. **Paleta de Cores Dark Theme**
+- ✅ Background principal: Preto (#000000)
+- ✅ Cards: Gradiente de cinza escuro (#1a1a1a → #262626)
+- ✅ Bordas: Cinza escuro (#333333)
+- ✅ Texto principal: Branco (#FFFFFF)
+- ✅ Texto secundário: Cinza claro (#A0A0A0)
+- ✅ Acento verde: #00FF00
+
+#### 2. **Estrutura de Layout**
+- ✅ Sidebar customizada com fundo preto (#0a0a0a)
+- ✅ Logo e título estilizados no topo da sidebar
+- ✅ Seções organizadas com ícones
+- ✅ Header principal com título em maiúsculas
+- ✅ Subtítulo descritivo
+
+#### 3. **Cards de Métricas**
+- ✅ Grid de 4 colunas responsivo
+- ✅ Ícones grandes (emojis) no topo de cada card
+- ✅ Labels em maiúsculas com espaçamento de letras
+- ✅ Valores grandes e destacados
+- ✅ Gradiente de fundo nos cards
+- ✅ Bordas arredondadas (12px)
+- ✅ Sombras e efeito hover
+
+#### 4. **Navegação**
+- ✅ Tabs horizontais ao invés de radio buttons
+- ✅ Tab ativa destacada com borda verde
+- ✅ Texto em maiúsculas
+- ✅ 5 tabs principais:
+  - 🏠 DASHBOARD
+  - 👤 DADOS DO CLIENTE
+  - 📈 GESTÃO DE CATEGORIAS
+  - 🎯 MERCADO SUBCATEGORIAS
+  - 📊 ANÁLISE EXECUTIVA
+
+#### 5. **Tipografia**
+- ✅ Títulos em maiúsculas com letter-spacing
+- ✅ Hierarquia clara de tamanhos
+- ✅ Text-shadow para profundidade
+- ✅ Font-weight bold para destaques
+
+#### 6. **Componentes Customizados**
+- ✅ Função `criar_metric_card()` para cards padronizados
+- ✅ Insight cards com borda lateral colorida
+- ✅ Formulários com inputs estilizados
+- ✅ Botões com gradiente verde
+- ✅ Expanders customizados
+- ✅ Dataframes com fundo escuro
+
+#### 7. **Elementos Interativos**
+- ✅ Botões com gradiente e efeito hover
+- ✅ Inputs com borda verde no focus
+- ✅ File uploader estilizado
+- ✅ Scrollbar customizada
+
+### Comparação com Layout de Referência
+
+| Elemento | Referência | Implementado | Status |
+|----------|-----------|--------------|--------|
+| Fundo preto | ✓ | ✓ | ✅ |
+| Cards com ícones | ✓ | ✓ | ✅ |
+| Tabs horizontais | ✓ | ✓ | ✅ |
+| Sidebar escura | ✓ | ✓ | ✅ |
+| Métricas em grid | ✓ | ✓ | ✅ |
+| Tipografia maiúscula | ✓ | ✓ | ✅ |
+| Gradientes | ✓ | ✓ | ✅ |
+| Bordas arredondadas | ✓ | ✓ | ✅ |
+| Acento verde | ✓ | ✓ | ✅ |
+
+### Funcionalidades Preservadas
+
+✅ Todas as funcionalidades originais foram mantidas:
+- Configuração de dados do cliente
+- Gestão de categorias macro
+- Cadastro de subcategorias
+- Importação de Excel
+- Geração de relatório PDF
+- Ranking de oportunidades
+- Simulação de cenários
+- Cálculo de tendências
+- Plano de ação sugerido
+- Insights dos cenários
+
+### Melhorias Visuais Adicionais
+
+1. **Cards com gradiente**: Efeito visual mais moderno
+2. **Hover effects**: Feedback visual ao passar o mouse
+3. **Sombras**: Profundidade e hierarquia visual
+4. **Scrollbar customizada**: Consistência com o tema escuro
+5. **Focus states**: Indicação clara de campos ativos
+
+### Testes Realizados
+
+- ✅ Sintaxe Python validada
+- ✅ Aplicação iniciada com sucesso
+- ✅ Interface carregada corretamente
+- ✅ Navegação por tabs funcionando
+- ✅ Sidebar customizada exibida
+- ✅ Cards de métricas renderizados
+- ✅ CSS customizado aplicado
+
+### Observações
+
+O layout foi implementado com sucesso seguindo o padrão da imagem de referência. A aplicação mantém toda a funcionalidade original enquanto apresenta uma interface visual moderna e profissional com tema escuro.
+
+### Próximos Passos
+
+1. Substituir o arquivo `app.py` original pelo `app_new.py`
+2. Fazer commit das alterações no repositório GitHub
+3. Documentar as mudanças no README
